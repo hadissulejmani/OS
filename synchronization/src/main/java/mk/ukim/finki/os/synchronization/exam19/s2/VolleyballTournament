@@ -1,0 +1,104 @@
+import java.util.HashSet;
+import java.util.concurrent.Semaphore;
+
+public class VolleyballTournament {
+
+	public static Semaphore inside = new Semaphore(12);
+	public static Semaphore dressingRoom = new Semaphore(4);
+	
+	//to check for players ready to start the game
+	public static Semaphore gameStarted = new Semaphore(0);
+	
+	//semaphore that is used for several reasons inside the example
+	public static Semaphore lock = new Semaphore(1);
+	
+	static int counter = 0;
+	static int counter_release = 0;
+	
+	static class Player extends Thread {
+
+		public void run() {
+			try {
+				execute();
+			}
+			catch(InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	    public void execute() throws InterruptedException {
+	        // at most 12 players should print this in parallel
+	    	inside.acquire();
+	        System.out.println("Player inside.");
+	        
+	        // at most 4 players may enter in the dressing room in parallel
+	        dressingRoom.acquire();
+	        System.out.println("In dressing room.");
+	        // this represents the dressing time
+	        Thread.sleep(10);
+	        //counts number of dressed players
+	        lock.acquire();
+	        counter++;
+	        lock.release();
+	        dressingRoom.release();
+	        
+	        if(counter==12) {
+	        	counter = 0;
+	        	counter_release = 0;
+	        	gameStarted.release(12);
+	        }
+	        
+	        gameStarted.acquire();
+		    // after all players are ready, they should start with the game together
+		    System.out.println("Game started.");
+		    // this represents the game duration
+		    Thread.sleep(100);
+		    
+		    System.out.println("Player done.");
+		    
+
+		    // only one player should print the next line, representing that the game has finished
+		    lock.acquire();
+		    counter_release++;
+		    if(counter_release==12) {
+		    	System.out.println("Game finished.");
+		    	inside.release(12);
+		    }
+		    lock.release();
+	        
+		    
+	        
+	    }
+	}
+	
+    public static void main(String[] args) throws InterruptedException {
+    	
+        HashSet<Player> threads = new HashSet<>();
+        
+        for (int i = 0; i < 60; i++) {
+            Player p = new Player();
+            threads.add(p);
+        }
+        
+        // run all threads in background
+        for(Thread t : threads) {
+        	t.start();
+        }
+        
+        // after all of them are started, wait each of them to finish for maximum 2_000 ms
+        for(Thread t : threads) {
+        	t.join(2_000);
+        }
+        
+        // for each thread, terminate it if it is not finished
+        for(Thread t : threads) {
+        	if(t.isAlive()) {
+        		t.interrupt();
+        		System.out.println("Possible deadlock!");
+        	}
+        }
+        
+        System.out.println("Tournament finished.");
+
+    }
+}
