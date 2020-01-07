@@ -71,7 +71,7 @@ public class MacauCardTournament {
                     ready.release(4);
                 }
                 ready.acquire();
-                System.out.println("Game red " + num + " started");
+                System.out.println("Game "+ num +" started");
                 Thread.sleep(200);
                 System.out.println("Red player finished game " + num);
                 done.release();
@@ -113,7 +113,7 @@ public class MacauCardTournament {
             for (int num = 1; num <= 3; num++) {
                 greenHere.release();
                 ready.acquire();
-                System.out.println("Game green " + num + " started");
+                System.out.println("Game "+ num +" started");
                 Thread.sleep(200);
                 System.out.println("Green player finished game " + num);
                 done.release();
